@@ -7,13 +7,11 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 
-// Production URL will be updated after Render deployment
-const PROD_FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const PORT = process.env.PORT || 3002;
 
 const io = socketIo(server, {
   cors: {
-    origin: [PROD_FRONTEND_URL],
+    origin: true, // Allow all origins in production
     methods: ["GET", "POST"],
     credentials: true,
     allowedHeaders: ["my-custom-header"]
@@ -26,25 +24,20 @@ const io = socketIo(server, {
   maxHttpBufferSize: 1e8
 });
 
-app.use(cors({
-  origin: [PROD_FRONTEND_URL],
-  methods: ["GET", "POST"],
-  credentials: true,
-  allowedHeaders: ["my-custom-header"]
-}));
+app.use(cors());
 app.use(express.json());
 
-// Serve static files
+// Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'client/dist')));
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({ message: 'Scrum Poker API is running' });
+// API endpoints
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'healthy' });
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'healthy' });
+// Handle all other requests by serving the React app
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client/dist/index.html'));
 });
 
 // Store rooms in memory

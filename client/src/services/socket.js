@@ -33,7 +33,12 @@ class SocketService {
     this.isConnecting = true;
 
     try {
-      this.instance = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:3002', {
+      // In production, connect to the same origin
+      const serverUrl = import.meta.env.PROD 
+        ? window.location.origin
+        : (import.meta.env.VITE_SERVER_URL || 'http://localhost:3002');
+
+      this.instance = io(serverUrl, {
         transports: ['websocket'],
         forceNew: true,
         reconnection: true,
