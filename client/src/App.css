@@ -1,0 +1,183 @@
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+  font-family: 'Roboto', sans-serif;
+}
+
+.App {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  position: relative;
+}
+
+.poker-table {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 1200px;
+  min-height: 600px;
+  background-color: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  perspective: 1000px;
+}
+
+.card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.card.flipped {
+  transform: rotateY(180deg);
+}
+
+.selected-card {
+  border: 2px solid #4caf50;
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.vote-button {
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.vote-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.user-card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 160px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.user-card:hover {
+  transform: translateY(-4px);
+}
+
+.user-card.voted {
+  border: 2px solid #4caf50;
+}
+
+.user-card.host {
+  border: 2px solid #2196f3;
+}
+
+.room-info {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  z-index: 1000;
+}
+
+.user-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 40px;
+}
+
+.voting-controls {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.poker-chip {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+  border: 4px dashed #bdbdbd;
+  position: absolute;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes dealCard {
+  from {
+    transform: translateY(-100vh) rotate(720deg);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.dealt-card {
+  animation: dealCard 0.5s ease-out forwards;
+}
+
+.voting-result {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+  z-index: 2000;
+}
+
+.vote-status {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .poker-table {
+    width: 95%;
+    min-height: 400px;
+    padding: 16px;
+  }
+
+  .user-cards {
+    gap: 16px;
+  }
+
+  .user-card {
+    min-width: 120px;
+    padding: 12px;
+  }
+
+  .voting-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}

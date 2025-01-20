@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Poker</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect fill="#1976D2" x="0" y="0" width="24" height="24" rx="12"/>
+        <path d="M7,7 L17,7 C18.1045695,7 19,7.8954305 19,9 L19,15 C19,16.1045695 18.1045695,17 17,17 L7,17 C5.8954305,17 5,16.1045695 5,15 L5,9 C5,7.8954305 5.8954305,7 7,7 Z" fill="#FFFFFF"/>
+        <text font-family="Arial-BoldMT, Arial" font-size="8" font-weight="bold" fill="#1976D2">
+            <tspan x="8" y="15">SP</tspan>
+        </text>
+    </g>
+</svg> 
