@@ -33,7 +33,7 @@ class SocketService {
     this.isConnecting = true;
 
     try {
-      this.instance = io('http://localhost:3002', {
+      this.instance = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:3002', {
         transports: ['websocket'],
         forceNew: true,
         reconnection: true,

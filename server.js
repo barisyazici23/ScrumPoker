@@ -6,9 +6,14 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
+
+// Production URL will be updated after Render deployment
+const PROD_FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const PORT = process.env.PORT || 3002;
+
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:5173"],
+    origin: [PROD_FRONTEND_URL],
     methods: ["GET", "POST"],
     credentials: true,
     allowedHeaders: ["my-custom-header"]
@@ -22,7 +27,7 @@ const io = socketIo(server, {
 });
 
 app.use(cors({
-  origin: ["http://localhost:5173"],
+  origin: [PROD_FRONTEND_URL],
   methods: ["GET", "POST"],
   credentials: true,
   allowedHeaders: ["my-custom-header"]
@@ -291,7 +296,6 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 3002;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 }); 
