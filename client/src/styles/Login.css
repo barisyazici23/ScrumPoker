@@ -1,0 +1,167 @@
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #f0f0f0;
+}
+
+.login-box {
+    background: white;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-box h1 {
+    color: #1B5E20;
+    margin-bottom: 30px;
+    font-size: 2.5em;
+}
+
+.login-form {
+    margin-bottom: 20px;
+}
+
+.login-form h2 {
+    color: #2E7D32;
+    font-size: 1.2em;
+    margin-bottom: 15px;
+}
+
+.login-form input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.create-room-btn, .join-room-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.create-room-btn {
+    background: #1B5E20;
+    color: white;
+}
+
+.create-room-btn:hover {
+    background: #2E7D32;
+}
+
+.join-room-btn {
+    background: #4CAF50;
+    color: white;
+}
+
+.join-room-btn:hover {
+    background: #45a049;
+}
+
+.divider {
+    margin: 20px 0;
+    position: relative;
+    text-align: center;
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: 1px;
+    background: #ddd;
+}
+
+.divider span {
+    background: white;
+    padding: 0 10px;
+    color: #666;
+    position: relative;
+}
+
+/* Host kontrolleri için stiller */
+.control-btn {
+    background: #1B5E20;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.control-btn:hover {
+    background: #2E7D32;
+}
+
+.room-info {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+/* Bildirim stilleri */
+.notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 8px;
+    font-size: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.notification.show {
+    opacity: 1;
+}
+
+.notification-icon {
+    font-size: 20px;
+}
+
+.notification-message {
+    font-weight: 500;
+}
+
+.notification.error {
+    background: linear-gradient(to right, #d32f2f, #c62828);
+    border-left: 4px solid #b71c1c;
+}
+
+.notification.success {
+    background: linear-gradient(to right, #2e7d32, #1b5e20);
+    border-left: 4px solid #1b5e20;
+}
+
+.notification.warning {
+    background: linear-gradient(to right, #f57c00, #ef6c00);
+    border-left: 4px solid #e65100;
+} 

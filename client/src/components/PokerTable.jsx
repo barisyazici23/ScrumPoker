@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import socketService from '../services/socket';
+import '../styles/PokerTable.css';
 
 const FIBONACCI = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
 
@@ -144,13 +145,37 @@ function PokerTable({ roomState, setRoomState }) {
   console.log('Rendering poker table with users:', users);
 
   return (
-    <div style={{ 
-      width: '100vw', 
-      height: '100vh', 
-      backgroundColor: '#f5f5f5', 
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
+    <div className="poker-table">
+      <div className="center-info">
+        <h1>Scrum Poker</h1>
+        <p>{users.length} Kullanıcı</p>
+      </div>
+      
+      {/* Oyuncu pozisyonları */}
+      {users.map((user, index) => (
+        <div key={user.id} className={`player-position position-${index}`}>
+          <div className="player-avatar">
+            <span>{user.username.charAt(0)}</span>
+          </div>
+          <div className="player-name">
+            {user.username}
+            {user.isHost && " 👑"}
+          </div>
+          <div className="player-card">
+            {roomState.room.isVotingActive && user.vote !== null ? user.vote : (user.vote && roomState.room.isVotingActive ? '✓' : '?')}
+          </div>
+        </div>
+      ))}
+
+      {/* Diğer pozisyonlar için placeholder */}
+      {[...Array(Math.max(0, 10 - users.length)).keys()].map((position) => (
+        <div key={position} className={`player-position position-${users.length + position}`}>
+          <div className="player-avatar">
+            <span>?</span>
+          </div>
+        </div>
+      ))}
+
       {/* Room Info */}
       <Box
         sx={{
@@ -181,237 +206,58 @@ function PokerTable({ roomState, setRoomState }) {
         )}
       </Box>
 
-      {/* Poker Table */}
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '80%',
-        maxWidth: '800px',
-        height: '500px',
-        backgroundColor: '#1B5E20',
-        borderRadius: '16px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-        border: '2px solid #2E7D32',
-      }}>
-        <Typography variant="h4" sx={{ color: 'white', mb: 2 }}>
-          Scrum Poker
-        </Typography>
-        <Typography variant="subtitle1" sx={{ color: 'white' }}>
-          {users.length} Kullanıcı
-        </Typography>
-      </div>
-
-      {/* Users */}
-      {users.map((user, index) => (
-        <div
-          key={user.id}
-          style={{
-            ...getPositionStyle(index, users.length),
-            position: 'absolute',
-            zIndex: 2,
-          }}
-        >
-          <div style={{
-            backgroundColor: 'white',
-            padding: '16px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-            textAlign: 'center',
-            minWidth: '120px',
-            border: user.isHost ? '2px solid #2196f3' : user.vote !== null ? '2px solid #4caf50' : '2px solid transparent'
-          }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              {user.username}
-              {user.isHost && " 👑"}
-            </Typography>
-            {roomState.room.isVotingActive && (
-              <div style={{ marginTop: '8px' }}>
-                <div style={{
-                  width: '40px',
-                  height: '60px',
-                  margin: '0 auto',
-                  backgroundColor: user.vote !== null ? '#E8F5E9' : '#f0f0f0',
-                  border: '2px solid #1B5E20',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  fontWeight: 'bold',
-                  fontSize: '1.2rem',
-                  color: '#1B5E20',
-                }}>
-                  {!roomState.room.isVotingActive && user.vote ? user.vote : (user.vote && roomState.room.isVotingActive ? '✓' : '?')}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
-
       {/* Voting Controls */}
       {roomState.room.isVotingActive && !roomState.currentUser?.vote && (
-        <div style={{
-          position: 'fixed',
-          bottom: 20,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: '8px',
-          padding: '16px',
-          borderRadius: '8px',
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          zIndex: 1000,
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-        }}>
+        <div className="voting-controls">
           {FIBONACCI.map((number) => (
-            <Button
+            <button
               key={number}
-              variant={roomState.currentUser?.vote === number ? 'contained' : 'outlined'}
-              color={roomState.currentUser?.vote === number ? 'success' : 'primary'}
+              className={roomState.currentUser?.vote === number ? 'selected' : ''}
               onClick={() => handleVote(number)}
-              sx={{ minWidth: '48px', height: '48px', margin: '4px' }}
             >
               {number}
-            </Button>
+            </button>
           ))}
-          <Button
-            variant={roomState.currentUser?.vote === '☕' ? 'contained' : 'outlined'}
-            color={roomState.currentUser?.vote === '☕' ? 'success' : 'primary'}
+          <button
+            className={roomState.currentUser?.vote === '☕' ? 'selected' : ''}
             onClick={() => handleVote('☕')}
-            sx={{ 
-              minWidth: '48px',
-              height: '48px',
-              margin: '4px',
-              backgroundColor: roomState.currentUser?.vote === '☕' ? '#795548' : 'transparent',
-              color: roomState.currentUser?.vote === '☕' ? 'white' : '#795548',
-              '&:hover': {
-                backgroundColor: '#5D4037',
-                color: 'white'
-              },
-            }}
           >
             ☕
-          </Button>
+          </button>
         </div>
       )}
 
       {/* Voting Results */}
       {votingResult && !roomState.room.isVotingActive && (
-        <div style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          backgroundColor: 'white',
-          padding: '32px',
-          borderRadius: '16px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-          maxWidth: '500px',
-          width: '90%',
-          zIndex: 2000,
-        }}>
-          <Typography variant="h5" gutterBottom sx={{ borderBottom: '2px solid #1B5E20', paddingBottom: '8px', color: '#1B5E20' }}>
-            Oylama Sonuçları
-          </Typography>
+        <div className="voting-results">
+          <h2>Oylama Sonuçları</h2>
           
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            backgroundColor: '#E8F5E9',
-            padding: '16px',
-            borderRadius: '8px',
-            marginY: '16px'
-          }}>
-            <Typography variant="h6">Ortalama:</Typography>
-            <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold' }}>
-              {votingResult.average}
-            </Typography>
-          </Box>
+          <div className="result-item">
+            <span>Ortalama:</span>
+            <strong>{votingResult.average}</strong>
+          </div>
 
           {votingResult.coffeeBreaks > 0 && (
-            <Box sx={{ 
-              backgroundColor: '#795548',
-              color: 'white',
-              padding: '12px',
-              borderRadius: '8px',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <span style={{ fontSize: '24px' }}>☕</span>
-              <Typography>
-                Mola İsteyenler: {votingResult.coffeeBreaks}
-              </Typography>
-            </Box>
+            <div className="result-item">
+              <span>Mola İsteyenler:</span>
+              <strong>{votingResult.coffeeBreaks}</strong>
+            </div>
           )}
 
-          <Box sx={{ 
-            marginTop: '16px',
-            maxHeight: '200px',
-            overflowY: 'auto',
-            '&::-webkit-scrollbar': {
-              width: '8px',
-            },
-            '&::-webkit-scrollbar-track': {
-              background: '#f1f1f1',
-              borderRadius: '4px',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              background: '#888',
-              borderRadius: '4px',
-            },
-          }}>
+          <div className="votes">
             {votingResult.votes.map((vote, index) => (
-              <Box 
-                key={index}
-                sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '8px',
-                  borderBottom: '1px solid #eee',
-                  '&:last-child': {
-                    borderBottom: 'none'
-                  }
-                }}
-              >
-                <Typography sx={{ fontWeight: 'bold' }}>{vote.username}</Typography>
-                <Typography 
-                  sx={{ 
-                    fontWeight: 'bold',
-                    color: vote.vote === '☕' ? '#795548' : '#1B5E20'
-                  }}
-                >
-                  {vote.vote || 'Oy vermedi'}
-                </Typography>
-              </Box>
+              <div key={index} className="vote-item">
+                <span>{vote.username}</span>
+                <strong>{vote.vote || 'Oy vermedi'}</strong>
+              </div>
             ))}
-          </Box>
+          </div>
 
-          <Button
-            variant="contained"
+          <button
             onClick={() => setVotingResult(null)}
-            sx={{ 
-              marginTop: '24px',
-              backgroundColor: '#1B5E20',
-              '&:hover': {
-                backgroundColor: '#2E7D32'
-              }
-            }}
-            fullWidth
           >
             Kapat
-          </Button>
+          </button>
         </div>
       )}
     </div>

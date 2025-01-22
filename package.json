@@ -1,31 +1,18 @@
 {
   "name": "scrum-poker",
   "version": "1.0.0",
-  "description": "Real-time Planning Poker application for Scrum teams",
   "main": "server.js",
   "scripts": {
-    "build": "cd client && npm install && npm run build",
-    "serve": "npm run build && node server.js",
-    "dev": "nodemon server.js"
+    "start": "node server.js",
+    "dev": "nodemon --ignore 'client/*' server.js",
+    "clean": "pkill -f node || true"
   },
   "dependencies": {
-    "cors": "^2.8.5",
     "express": "^4.18.2",
-    "socket.io": "^4.7.4"
+    "socket.io": "^4.8.1",
+    "three": "^0.172.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
     "nodemon": "^3.0.3"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://muratkardesler@github.com/barisyazici23/ScrumPoker.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/barisyazici23/ScrumPoker/issues"
-  },
-  "homepage": "https://github.com/barisyazici23/ScrumPoker#readme"
+  }
 }

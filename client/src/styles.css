@@ -1,3 +1,13 @@
+body {
+    margin: 0;
+    padding: 20px;
+    background: #f0f0f0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .poker-table {
     background: radial-gradient(ellipse at center, #0b6623 0%, #0b4619 100%);
     border-radius: 200px;
@@ -7,10 +17,10 @@
         0 10px 20px rgba(0, 0, 0, 0.3);
     padding: 40px;
     position: relative;
-    min-height: 500px;
-    margin: 30px auto;
+    min-height: 600px;
     width: 90%;
     max-width: 1000px;
+    margin: 0 auto;
 }
 
 .poker-table::before {
@@ -25,20 +35,45 @@
     pointer-events: none;
 }
 
-.player-area {
+.player-position {
     position: absolute;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 15px;
-    border-radius: 10px;
-    text-align: center;
-    color: white;
+    width: 120px;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Oyuncu pozisyonları */
+.position-0 { top: 10px; left: 50%; transform: translateX(-50%); }     /* Üst */
+.position-1 { top: 25%; right: 10px; }                                 /* Sağ üst */
+.position-2 { top: 50%; right: -20px; transform: translateY(-50%); }   /* Sağ orta */
+.position-3 { bottom: 25%; right: 10px; }                              /* Sağ alt */
+.position-4 { bottom: 10px; left: 50%; transform: translateX(-50%); }  /* Alt */
+.position-5 { bottom: 25%; left: 10px; }                               /* Sol alt */
+.position-6 { top: 50%; left: -20px; transform: translateY(-50%); }    /* Sol orta */
+.position-7 { top: 25%; left: 10px; }                                  /* Sol üst */
+
+.player-avatar {
+    width: 60px;
+    height: 60px;
+    background: #ffffff;
+    border-radius: 50%;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #4a2810;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .player-name {
-    font-size: 16px;
-    margin-bottom: 10px;
     color: #ffffff;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    font-size: 14px;
+    text-align: center;
+    margin-top: 5px;
 }
 
 .center-info {
@@ -50,4 +85,20 @@
     text-align: center;
     font-size: 24px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.player-card {
+    width: 40px;
+    height: 60px;
+    background: white;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    margin-top: 5px;
 } 

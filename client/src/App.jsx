@@ -1,23 +1,13 @@
-import React, { useState } from 'react';
-import JoinRoom from './components/JoinRoom';
+import React from 'react';
 import PokerTable from './components/PokerTable';
-import './App.css';
+import './index.css';
 
-const App = () => {
-  const [roomState, setRoomState] = useState({
-    currentUser: null,
-    room: null
-  });
-
+function App() {
   return (
-    <div className="App">
-      {!roomState.room ? (
-        <JoinRoom setRoomState={setRoomState} />
-      ) : (
-        <PokerTable roomState={roomState} setRoomState={setRoomState} />
-      )}
+    <div className="app">
+      <PokerTable />
     </div>
   );
-};
+}
 
 export default App; 
