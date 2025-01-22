@@ -2,6 +2,13 @@
 const socket = io();
 let pokerTable;
 
+// Global değişkenler
+let currentRoomId = null;
+let isHost = false;
+let hasVoted = false;
+let votingActive = false;
+let users = []; // Kullanıcıları global olarak tutalım
+
 // Sayfa yüklendiğinde
 window.onload = function() {
     const container = document.getElementById('pokerTable');
@@ -40,16 +47,52 @@ socket.on('roomError', (error) => {
 });
 
 socket.on('joinSuccess', (data) => {
+    currentRoomId = data.roomId;
+    isHost = data.isHost;
     document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('hostControls').style.display = isHost ? 'block' : 'none';
+    
+    // Oda ID'si için kopyalama butonu ekle
+    const roomIdDiv = document.createElement('div');
+    roomIdDiv.id = 'roomIdDisplay';
+    roomIdDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(27, 94, 32, 0.9);
+        padding: 10px 15px;
+        border-radius: 8px;
+        color: white;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+    `;
+    roomIdDiv.innerHTML = `
+        <span>Oda: ${data.roomId}</span>
+        <button onclick="copyRoomId('${data.roomId}')" style="
+            background: white;
+            color: #1B5E20;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        ">
+            📋 Kopyala
+        </button>
+    `;
+    document.body.appendChild(roomIdDiv);
+
     showNotification(`${data.roomId} odasına başarıyla katıldınız!`, 'success');
     pokerTable.setRoomId(data.roomId);
 });
 
-socket.on('updateUsers', ({ users, count }) => {
-    // Sandalye sayısını güncelle
+socket.on('updateUsers', ({ users: updatedUsers, count }) => {
+    users = updatedUsers; // Global users'ı güncelle
     pokerTable.updateChairs(count);
     
-    // Kullanıcıları sandalyelere yerleştir
     users.forEach((user, index) => {
         pokerTable.addPlayer(index, user.username, true);
     });
@@ -132,4 +175,205 @@ function endVoting() {
 
 function updateUserCount(count) {
     document.querySelector('.center-info p').textContent = `${count} Kullanıcı`;
+}
+
+// Puanlama başlat
+window.startVoting = function() {
+    if (!isHost) return;
+    socket.emit('startVoting', currentRoomId);
+    document.querySelector('.start-voting').style.display = 'none';
+    document.querySelector('.end-voting').style.display = 'block';
+    document.querySelector('.reset-voting').style.display = 'none';
+    votingActive = true;
+}
+
+// Puanlama bitir
+window.endVoting = function() {
+    if (!isHost) return;
+    socket.emit('endVoting', currentRoomId);
+    document.querySelector('.start-voting').style.display = 'none';
+    document.querySelector('.end-voting').style.display = 'none';
+    document.querySelector('.reset-voting').style.display = 'block';
+    votingActive = false;
+}
+
+// Oy kullan
+window.vote = function(score) {
+    if (hasVoted) {
+        showNotification('Zaten oy kullandınız!', 'warning');
+        return;
+    }
+    
+    socket.emit('vote', {
+        roomId: currentRoomId,
+        score: score
+    });
+    
+    hasVoted = true;
+    // Kendi oyumuz için de sadece tik işareti gösterelim
+    const userIndex = users.findIndex(u => u.id === socket.id);
+    if (userIndex !== -1) {
+        pokerTable.showVoteCheck(userIndex);
+    }
+    
+    // Kullanılan oyu vurgula
+    const buttons = document.querySelectorAll('#votingButtons button');
+    buttons.forEach(btn => {
+        if (btn.textContent === score.toString()) {
+            btn.style.background = '#1B5E20';
+            btn.style.color = 'white';
+        }
+    });
+}
+
+// Socket olaylarını dinle
+socket.on('vote', (data) => {
+    const { userId, position, score } = data;
+    if (!votingActive) return;
+    pokerTable.showVoteCheck(position); // Sadece tik işaretini göster, puanı gösterme
+});
+
+socket.on('votingStarted', () => {
+    hasVoted = false;
+    votingActive = true;
+    showNotification('Puanlama başladı!', 'info');
+    showVotingButtons();
+    pokerTable.clearAllVotes(); // Önceki puanları temizle
+    pokerTable.clearAllChecks(); // Önceki tikleri temizle
+});
+
+socket.on('votingEnded', (results) => {
+    const { votes, average, finalScore } = results;
+    votingActive = false;
+    
+    // Önce tüm tikleri temizle
+    pokerTable.clearAllChecks();
+    
+    // Sonra tüm oyları göster
+    votes.forEach(([userId, score]) => {
+        const userIndex = users.findIndex(u => u.id === userId);
+        if (userIndex !== -1) {
+            pokerTable.showPlayerVote(userIndex, score);
+        }
+    });
+    
+    // Sonuçları göster
+    const voteValues = votes.map(([_, score]) => score);
+    showVotingResults(voteValues, average, finalScore);
+    hideVotingButtons();
+});
+
+socket.on('votingReset', () => {
+    pokerTable.clearAllVotes();
+    pokerTable.clearAllChecks();
+    hideVotingButtons();
+    showNotification('Puanlama sıfırlandı!', 'info');
+});
+
+// Oylama sonuçlarını gösteren fonksiyon
+function showVotingResults(votes, average, finalScore) {
+    // Varsa eski sonuç kutusunu kaldır
+    const existingResults = document.getElementById('votingResults');
+    if (existingResults) {
+        existingResults.remove();
+    }
+
+    const resultsDiv = document.createElement('div');
+    resultsDiv.id = 'votingResults';
+    resultsDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(27, 94, 32, 0.95);
+        padding: 20px;
+        border-radius: 12px;
+        color: white;
+        text-align: center;
+        z-index: 1000;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        min-width: 300px;
+    `;
+
+    // Oyları sırala
+    const sortedVotes = [...votes].sort((a, b) => a - b);
+
+    resultsDiv.innerHTML = `
+        <h2 style="margin: 0 0 15px 0;">Puanlama Sonuçları</h2>
+        <div style="margin: 10px 0;">
+            <strong>Verilen Oylar:</strong><br>
+            <span style="font-size: 20px;">${sortedVotes.join(' - ')}</span>
+        </div>
+        <div style="margin: 15px 0;">
+            <strong>Ortalama:</strong><br>
+            <span style="font-size: 24px;">${average.toFixed(1)}</span>
+        </div>
+        <div style="margin: 15px 0;">
+            <strong>Final Puan:</strong><br>
+            <span style="font-size: 32px; font-weight: bold; color: #4CAF50;">${finalScore}</span>
+            <br>
+            <span style="font-size: 14px; opacity: 0.8;">(En Yakın Fibonacci)</span>
+        </div>
+        <button onclick="this.parentElement.remove()" style="
+            margin-top: 15px;
+            padding: 8px 16px;
+            background: white;
+            color: #1B5E20;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        ">Kapat</button>
+    `;
+
+    document.body.appendChild(resultsDiv);
+    
+    // 10 saniye sonra otomatik kapat
+    setTimeout(() => {
+        if (document.getElementById('votingResults')) {
+            document.getElementById('votingResults').remove();
+        }
+    }, 10000);
+}
+
+function showVotingButtons() {
+    const fibNumbers = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+    const votingDiv = document.createElement('div');
+    votingDiv.id = 'votingButtons';
+    
+    fibNumbers.forEach(num => {
+        const btn = document.createElement('button');
+        btn.textContent = num;
+        btn.onclick = () => vote(num);
+        votingDiv.appendChild(btn);
+    });
+
+    document.body.appendChild(votingDiv);
+}
+
+function hideVotingButtons() {
+    const votingDiv = document.getElementById('votingButtons');
+    if (votingDiv) {
+        votingDiv.remove();
+    }
+}
+
+// Kopyalama fonksiyonu
+window.copyRoomId = function(roomId) {
+    navigator.clipboard.writeText(roomId).then(() => {
+        showNotification('Oda ID kopyalandı!', 'success');
+    }).catch(() => {
+        showNotification('Kopyalama başarısız!', 'error');
+    });
+}
+
+window.resetVoting = function() {
+    if (!isHost) return;
+    pokerTable.clearAllVotes();
+    pokerTable.clearAllChecks();
+    document.querySelector('.start-voting').style.display = 'block';
+    document.querySelector('.end-voting').style.display = 'none';
+    document.querySelector('.reset-voting').style.display = 'none';
+    socket.emit('resetVoting', currentRoomId);
 } 

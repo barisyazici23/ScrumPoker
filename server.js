@@ -85,7 +85,79 @@ io.on('connection', (socket) => {
             }
         });
     });
+
+    // Puanlama başlat
+    socket.on('startVoting', (roomId) => {
+        const room = rooms.get(roomId);
+        if (room) {
+            room.votingActive = true;
+            room.votes = new Map(); // Oyları sıfırla
+            io.to(roomId).emit('votingStarted');
+        }
+    });
+
+    // Oy kullan
+    socket.on('vote', ({ roomId, score }) => {
+        const room = rooms.get(roomId);
+        if (room && room.votingActive) {
+            room.votes.set(socket.id, score);
+            
+            // Kullanıcının pozisyonunu bul
+            const position = room.users.findIndex(u => u.id === socket.id);
+            
+            // Oy bilgisini tüm kullanıcılara gönder
+            io.to(roomId).emit('vote', {
+                userId: socket.id,
+                position: position,
+                score: score
+            });
+
+            // Tüm oylar verildi mi kontrol et
+            if (room.votes.size === room.users.length) {
+                calculateResults(roomId);
+            }
+        }
+    });
+
+    // Puanlama sonlandır
+    socket.on('endVoting', (roomId) => {
+        calculateResults(roomId);
+    });
+
+    // Puanlama sıfırla
+    socket.on('resetVoting', (roomId) => {
+        const room = rooms.get(roomId);
+        if (room) {
+            room.votingActive = false;
+            room.votes = new Map();
+            io.to(roomId).emit('votingReset');
+        }
+    });
 });
+
+function calculateResults(roomId) {
+    const room = rooms.get(roomId);
+    if (room && room.votingActive) {
+        const votes = Array.from(room.votes.entries());
+        const voteValues = votes.map(([_, score]) => score);
+        const average = voteValues.reduce((a, b) => a + b, 0) / voteValues.length;
+        const closestFib = findClosestFibonacci(average);
+        
+        room.votingActive = false;
+        io.to(roomId).emit('votingEnded', {
+            votes: votes,
+            average: average,
+            finalScore: closestFib
+        });
+    }
+}
+
+function findClosestFibonacci(num) {
+    const fibNumbers = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+    return fibNumbers.reduce((prev, curr) => {
+        return (Math.abs(curr - num) < Math.abs(prev - num) ? curr : prev);
+    });
+}
 
 // Statik dosyaları serve et
 app.use(express.static(path.join(__dirname, 'client/src')));

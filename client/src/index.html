@@ -110,6 +110,107 @@
             align-items: center;
             gap: 10px;
         }
+        #votingButtons {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+            background: rgba(27, 94, 32, 0.9);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        #votingButtons button {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: white;
+            color: #1B5E20;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #votingButtons button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        #hostControls button {
+            margin: 5px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            background: #1B5E20;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #hostControls button:hover {
+            background: #2E7D32;
+        }
+        #votingResults {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -40%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        #votingResults button:hover {
+            background: #f0f0f0 !important;
+            transform: translateY(-2px);
+            transition: all 0.2s;
+        }
+
+        #roomIdDisplay button:hover {
+            background: #f0f0f0 !important;
+            transform: translateY(-1px);
+            transition: all 0.2s;
+        }
+
+        #roomIdDisplay {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .vote-check {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
@@ -138,6 +239,13 @@
         </div>
     </div>
     <div id="pokerTable"></div>
+
+    <!-- Host kontrolleri -->
+    <div id="hostControls" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 1000;">
+        <button onclick="startVoting()" class="start-voting">Puanlamayı Başlat</button>
+        <button onclick="endVoting()" class="end-voting" style="display: none;">Puanlamayı Bitir</button>
+        <button onclick="resetVoting()" class="reset-voting" style="display: none;">Temizle</button>
+    </div>
 
     <!-- Scriptleri sıralı yükleyelim -->
     <script src="/socket.io/socket.io.js"></script>

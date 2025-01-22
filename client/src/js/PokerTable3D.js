@@ -359,4 +359,168 @@ window.PokerTable3D = class PokerTable3D {
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
     }
+
+    throwCard(score) {
+        // Kart geometrisi
+        const cardGeometry = new THREE.BoxGeometry(30, 40, 1);
+        const cardMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0xffffff,
+            side: THREE.DoubleSide
+        });
+        const card = new THREE.Mesh(cardGeometry, cardMaterial);
+
+        // Kart üzerine sayı yaz
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = 128;
+        canvas.height = 128;
+        context.fillStyle = 'black';
+        context.font = 'bold 64px Arial';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(score, canvas.width/2, canvas.height/2);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        card.material.map = texture;
+
+        // Kartı masaya fırlat
+        card.position.copy(this.camera.position);
+        card.position.y = 100;
+        this.scene.add(card);
+
+        const targetPos = new THREE.Vector3(
+            Math.random() * 40 - 20,
+            75,
+            Math.random() * 40 - 20
+        );
+
+        const duration = 1000; // 1 saniye
+        const start = Date.now();
+
+        const animate = () => {
+            const now = Date.now();
+            const progress = (now - start) / duration;
+
+            if (progress < 1) {
+                card.position.lerp(targetPos, progress);
+                card.rotation.y += 0.1;
+                requestAnimationFrame(animate);
+            } else {
+                card.position.copy(targetPos);
+            }
+        };
+
+        animate();
+    }
+
+    showAllCards(votes) {
+        // Tüm kartları göster
+        votes.forEach((vote, userId) => {
+            // ... kart gösterme animasyonu
+        });
+    }
+
+    showPlayerVote(position, score) {
+        if (this.chairs[position]) {
+            // Varsa eski oy etiketini kaldır
+            this.chairs[position].children.forEach(child => {
+                if (child.name === 'voteLabel') {
+                    this.chairs[position].remove(child);
+                }
+            });
+
+            // Yeni oy etiketi oluştur
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 256;
+
+            // Arka plan
+            context.fillStyle = 'rgba(27, 94, 32, 0.9)';
+            context.beginPath();
+            context.arc(128, 128, 50, 0, Math.PI * 2);
+            context.fill();
+
+            // Puan
+            context.font = 'bold 80px Arial';
+            context.fillStyle = 'white';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(score, 128, 128);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.position.y = 120;
+            sprite.scale.set(30, 30, 1);
+            sprite.name = 'voteLabel';
+
+            this.chairs[position].add(sprite);
+        }
+    }
+
+    clearAllVotes() {
+        this.chairs.forEach(chair => {
+            if (chair) {
+                chair.children.forEach(child => {
+                    if (child.name === 'voteLabel') {
+                        chair.remove(child);
+                    }
+                });
+            }
+        });
+    }
+
+    showVoteCheck(position) {
+        if (this.chairs[position]) {
+            // Varsa eski tik işaretini kaldır
+            this.chairs[position].children.forEach(child => {
+                if (child.name === 'voteCheck') {
+                    this.chairs[position].remove(child);
+                }
+            });
+
+            // Tik işareti sprite'ı oluştur
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 128;
+            canvas.height = 128;
+
+            // Yeşil daire
+            context.fillStyle = '#4CAF50';
+            context.beginPath();
+            context.arc(64, 64, 32, 0, Math.PI * 2);
+            context.fill();
+
+            // Tik işareti
+            context.strokeStyle = 'white';
+            context.lineWidth = 8;
+            context.beginPath();
+            context.moveTo(40, 64);
+            context.lineTo(55, 80);
+            context.lineTo(88, 48);
+            context.stroke();
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.position.set(20, 100, 0);
+            sprite.scale.set(20, 20, 1);
+            sprite.name = 'voteCheck';
+
+            this.chairs[position].add(sprite);
+        }
+    }
+
+    clearAllChecks() {
+        this.chairs.forEach(chair => {
+            if (chair) {
+                chair.children.forEach(child => {
+                    if (child.name === 'voteCheck') {
+                        chair.remove(child);
+                    }
+                });
+            }
+        });
+    }
 } 
