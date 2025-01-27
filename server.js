@@ -45,7 +45,7 @@ const rooms = new Map();
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
+  console.log('User connected:', socket.id);
 
   socket.on('error', (error) => {
     console.error('Socket error:', error);
@@ -167,7 +167,7 @@ io.on('connection', (socket) => {
 
       if (votedUsers === totalUsers) {
         const votes = Array.from(room.votes.values());
-        const numericVotes = votes.filter(v => v !== '☕').map(Number);
+        const numericVotes = votes.filter(v => v !== '☕' && v !== '?' && !isNaN(v)).map(Number);
         
         let result = {
           votes: Array.from(room.votes.entries()).map(([userId, vote]) => ({
@@ -175,7 +175,8 @@ io.on('connection', (socket) => {
             vote
           })),
           average: 0,
-          coffeeBreaks: votes.filter(v => v === '☕').length
+          coffeeBreaks: votes.filter(v => v === '☕').length,
+          unsureVotes: votes.filter(v => v === '?').length
         };
 
         if (numericVotes.length > 0) {
@@ -235,7 +236,7 @@ io.on('connection', (socket) => {
 
       // Calculate final results
       const votes = Array.from(room.votes.values());
-      const numericVotes = votes.filter(v => v !== '☕').map(Number);
+      const numericVotes = votes.filter(v => v !== '☕' && v !== '?' && !isNaN(v)).map(Number);
       
       let result = {
         votes: Array.from(room.votes.entries()).map(([userId, vote]) => ({
@@ -243,7 +244,8 @@ io.on('connection', (socket) => {
           vote
         })),
         average: 0,
-        coffeeBreaks: votes.filter(v => v === '☕').length
+        coffeeBreaks: votes.filter(v => v === '☕').length,
+        unsureVotes: votes.filter(v => v === '?').length
       };
 
       if (numericVotes.length > 0) {
@@ -257,33 +259,66 @@ io.on('connection', (socket) => {
   });
 
   // Handle disconnection
-  socket.on('disconnect', (reason) => {
-    console.log('Client disconnected:', socket.id, 'Reason:', reason);
-    
-    // Find the room this socket was in
-    const roomId = socket.roomId;
-    if (roomId) {
-      const room = rooms.get(roomId);
-      if (room) {
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+    // Find the room this user was in
+    for (const [roomId, room] of rooms.entries()) {
+      const userIndex = Array.from(room.users.values()).findIndex(user => user.id === socket.id);
+      if (userIndex !== -1) {
+        // Remove user from the room
         room.users.delete(socket.id);
         room.votes.delete(socket.id);
         
+        // If room is empty, delete it
         if (room.users.size === 0) {
-          console.log(`Deleting empty room: ${roomId}`);
           rooms.delete(roomId);
-        } else if (room.host === socket.id) {
-          // Assign new host
-          const newHost = Array.from(room.users.keys())[0];
-          room.host = newHost;
-          const user = room.users.get(newHost);
-          if (user) {
-            user.isHost = true;
+        } else {
+          // If host left, assign new host
+          if (room.host === socket.id) {
+            const newHost = Array.from(room.users.keys())[0];
+            room.host = newHost;
+            const user = room.users.get(newHost);
+            if (user) {
+              user.isHost = true;
+            }
           }
-          console.log(`New host assigned in room ${roomId}:`, newHost);
-        }
+          
+          // Send updated user list to remaining users
+          const userList = Array.from(room.users.values());
+          io.to(roomId).emit('userJoined', userList);
+          
+          // If voting is active, check if all remaining users have voted
+          if (room.isVotingActive) {
+            const totalUsers = room.users.size;
+            const votedUsers = Array.from(room.users.values()).filter(u => u.vote !== null).length;
+            
+            if (votedUsers === totalUsers) {
+              const votes = Array.from(room.votes.values());
+              const numericVotes = votes.filter(v => v !== '☕' && v !== '?' && !isNaN(v)).map(Number);
+              
+              let result = {
+                votes: Array.from(room.votes.entries()).map(([userId, vote]) => ({
+                  username: room.users.get(userId).username,
+                  vote
+                })),
+                average: 0,
+                coffeeBreaks: votes.filter(v => v === '☕').length,
+                unsureVotes: votes.filter(v => v === '?').length
+              };
 
-        const userList = Array.from(room.users.values());
-        io.to(roomId).emit('userLeft', userList);
+              if (numericVotes.length > 0) {
+                const sum = numericVotes.reduce((a, b) => a + b, 0);
+                result.average = (sum / numericVotes.length).toFixed(1);
+              }
+
+              io.to(roomId).emit('votingComplete', result);
+            }
+          }
+        }
+        
+        // Notify other users about the disconnection
+        socket.to(roomId).emit('userDisconnected', socket.id);
+        break;
       }
     }
   });

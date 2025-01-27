@@ -1,25 +1,46 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, Paper, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText } from '@mui/material';
 import socketService from '../services/socket';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 const FIBONACCI = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
 
 const getPositionStyle = (index, total) => {
-  const angle = (index * (360 / total) - 90) * (Math.PI / 180);
-  const radius = Math.max(250, total * 50);
-  const centerX = radius * Math.cos(angle);
-  const centerY = radius * Math.sin(angle);
+  const radius = Math.min(window.innerWidth, window.innerHeight) * 0.3;
+  
+  let angle;
+  if (total <= 2) {
+    angle = (index * 180 + 90) * (Math.PI / 180);
+  } else if (total <= 4) {
+    angle = (index * 90 + 45) * (Math.PI / 180);
+  } else {
+    const baseAngle = 360 / total;
+    angle = ((index * baseAngle) + 90) * (Math.PI / 180);
+    const ellipticalFactor = 1.2;
+    const xRadius = radius * ellipticalFactor;
+    const yRadius = radius;
+    
+    return {
+      position: 'absolute',
+      left: `calc(50% + ${xRadius * Math.cos(angle)}px)`,
+      top: `calc(50% + ${yRadius * Math.sin(angle)}px)`,
+      transform: 'translate(-50%, -50%)',
+      transition: 'all 0.5s ease-in-out',
+    };
+  }
 
   return {
     position: 'absolute',
-    left: `calc(50% + ${centerX}px)`,
-    top: `calc(50% + ${centerY}px)`,
+    left: `calc(50% + ${radius * Math.cos(angle)}px)`,
+    top: `calc(50% + ${radius * Math.sin(angle)}px)`,
     transform: 'translate(-50%, -50%)',
+    transition: 'all 0.5s ease-in-out',
   };
 };
 
 function PokerTable({ roomState, setRoomState }) {
-  const [votingResult, setVotingResult] = useState(null);
+  const [showResults, setShowResults] = useState(false);
+  const [votingResults, setVotingResults] = useState(null);
 
   useEffect(() => {
     console.log('Current roomState:', roomState);
@@ -35,10 +56,12 @@ function PokerTable({ roomState, setRoomState }) {
       }));
     });
 
-    socketService.instance?.on('votingComplete', (result) => {
-      console.log('Voting complete:', result);
-      setVotingResult(result);
-    });
+    const handleVotingComplete = (results) => {
+      setVotingResults(results);
+      setShowResults(true);
+    };
+
+    socketService.instance?.on('votingComplete', handleVotingComplete);
 
     socketService.instance?.on('voteUpdate', ({ totalVotes, expectedVotes, userList }) => {
       console.log('Vote update:', totalVotes, expectedVotes, userList);
@@ -73,32 +96,34 @@ function PokerTable({ roomState, setRoomState }) {
       }));
     });
 
+    socketService.instance?.on('userDisconnected', (userId) => {
+      if (roomState?.room?.users) {
+        const updatedUsers = roomState.room.users.filter(u => u.id !== userId);
+        setRoomState(prev => ({
+          ...prev,
+          room: {
+            ...prev.room,
+            users: updatedUsers
+          }
+        }));
+      }
+    });
+
     return () => {
-      socketService.instance?.off('votingComplete');
+      socketService.instance?.off('votingComplete', handleVotingComplete);
       socketService.instance?.off('voteUpdate');
       socketService.instance?.off('votingStarted');
       socketService.instance?.off('votingEnded');
       socketService.instance?.off('userJoined');
+      socketService.instance?.off('userDisconnected');
     };
-  }, []);
+  }, [roomState, setRoomState]);
 
   const handleStartVoting = async () => {
     try {
-      if (!roomState.room?.id || !roomState.currentUser?.isHost) {
-        return;
-      }
       await socketService.startVoting(roomState.room.id);
-      setVotingResult(null);
-      setRoomState(prev => ({
-        ...prev,
-        room: {
-          ...prev.room,
-          users: prev.room.users.map(user => ({
-            ...user,
-            vote: null
-          }))
-        }
-      }));
+      setShowResults(false);
+      setVotingResults(null);
     } catch (err) {
       console.error('Error starting voting:', err);
     }
@@ -106,9 +131,6 @@ function PokerTable({ roomState, setRoomState }) {
 
   const handleEndVoting = async () => {
     try {
-      if (!roomState.room?.id || !roomState.currentUser?.isHost) {
-        return;
-      }
       await socketService.endVoting(roomState.room.id);
     } catch (err) {
       console.error('Error ending voting:', err);
@@ -117,20 +139,29 @@ function PokerTable({ roomState, setRoomState }) {
 
   const handleVote = async (value) => {
     try {
-      if (!roomState.room?.isVotingActive) {
-        return;
-      }
       await socketService.vote(roomState.room.id, value);
       setRoomState(prev => ({
         ...prev,
-        currentUser: {
-          ...prev.currentUser,
-          vote: value
+        room: {
+          ...prev.room,
+          users: prev.room.users.map(u => 
+            u.id === roomState.currentUser.id 
+              ? { ...u, vote: value }
+              : u
+          )
         }
       }));
     } catch (err) {
       console.error('Error voting:', err);
     }
+  };
+
+  const handleCloseResults = () => {
+    setShowResults(false);
+  };
+
+  const handleCopyRoomId = () => {
+    navigator.clipboard.writeText(roomState.room.id);
   };
 
   if (!roomState?.room) {
@@ -144,181 +175,271 @@ function PokerTable({ roomState, setRoomState }) {
   console.log('Rendering poker table with users:', users);
 
   return (
-    <div style={{ 
-      width: '100vw', 
-      height: '100vh', 
-      backgroundColor: '#f5f5f5', 
-      position: 'relative',
+    <Box sx={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      backgroundColor: '#FAFBFC',
       overflow: 'hidden'
     }}>
       {/* Room Info */}
-      <Box
-        sx={{
-          position: 'fixed',
-          top: 20,
-          right: 20,
-          zIndex: 1000,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1rem 2rem',
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          borderRadius: '8px',
-          color: 'white',
-          minWidth: '200px',
-        }}
-      >
-        <Typography variant="h6">Oda: {roomState.room.id}</Typography>
+      <Box sx={{
+        position: 'fixed',
+        top: '24px',
+        right: '24px',
+        padding: '16px 24px',
+        borderRadius: '16px',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        backdropFilter: 'blur(10px)',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        zIndex: 1000,
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="body1" sx={{ color: '#37474F', fontWeight: 500 }}>
+            Oda: {roomState.room.id}
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={handleCopyRoomId}
+            sx={{
+              padding: '4px',
+              color: '#546E7A',
+              '&:hover': {
+                backgroundColor: 'rgba(84, 110, 122, 0.08)',
+              }
+            }}
+          >
+            <ContentCopyIcon fontSize="small" />
+          </IconButton>
+        </Box>
         {roomState.currentUser?.isHost && (
           <Button
             variant="contained"
-            color={roomState.room.isVotingActive ? "error" : "success"}
             onClick={roomState.room.isVotingActive ? handleEndVoting : handleStartVoting}
-            sx={{ ml: 2 }}
+            sx={{
+              backgroundColor: roomState.room.isVotingActive ? '#EF5350' : '#3F51B5',
+              color: 'white',
+              '&:hover': {
+                backgroundColor: roomState.room.isVotingActive ? '#E53935' : '#303F9F',
+              }
+            }}
           >
-            {roomState.room.isVotingActive ? "Oylamayı Bitir" : "Oylama Başlat"}
+            {roomState.room.isVotingActive ? 'Oylamayı Bitir' : 'Oylamayı Başlat'}
           </Button>
         )}
       </Box>
 
       {/* Poker Table */}
-      <div style={{
+      <Box sx={{
         position: 'absolute',
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '80%',
-        maxWidth: '800px',
-        height: '500px',
-        backgroundColor: '#1B5E20',
-        borderRadius: '16px',
+        width: '80vw',
+        maxWidth: '1200px',
+        height: '80vh',
+        maxHeight: '800px',
+        borderRadius: '40px',
+        backgroundColor: '#3F51B5',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+        border: '1px solid rgba(255,255,255,0.1)',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
         alignItems: 'center',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-        border: '2px solid #2E7D32',
+        justifyContent: 'center',
+        padding: '40px'
       }}>
-        <Typography variant="h4" sx={{ color: 'white', mb: 2 }}>
+        <Typography variant="h2" sx={{ 
+          color: '#FFFFFF', 
+          mb: 3,
+          textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+          fontWeight: '500',
+          letterSpacing: '1px'
+        }}>
           Scrum Poker
         </Typography>
-        <Typography variant="subtitle1" sx={{ color: 'white' }}>
+        <Typography variant="h6" sx={{ 
+          color: 'rgba(255,255,255,0.9)',
+          mb: 2
+        }}>
           {users.length} Kullanıcı
         </Typography>
-      </div>
+      </Box>
 
       {/* Users */}
       {users.map((user, index) => (
-        <div
+        <Paper
           key={user.id}
-          style={{
+          elevation={4}
+          sx={{
             ...getPositionStyle(index, users.length),
-            position: 'absolute',
             zIndex: 2,
+            borderRadius: '16px',
+            padding: '16px',
+            backgroundColor: 'rgba(250, 250, 250, 0.95)',
+            backdropFilter: 'blur(10px)',
+            width: '160px',
+            maxWidth: '90vw',
+            border: user.isHost ? '2px solid #5C6BC0' : user.vote !== null ? '2px solid #78909C' : '2px solid transparent',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translate(-50%, -50%) scale(1.05)',
+              boxShadow: '0 12px 32px rgba(0,0,0,0.15)',
+            }
           }}
         >
-          <div style={{
-            backgroundColor: 'white',
-            padding: '16px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-            textAlign: 'center',
-            minWidth: '120px',
-            border: user.isHost ? '2px solid #2196f3' : user.vote !== null ? '2px solid #4caf50' : '2px solid transparent'
+          <Typography variant="h6" sx={{ 
+            fontWeight: '500',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            color: '#37474F',
+            fontSize: { xs: '0.9rem', sm: '1.1rem', md: '1.25rem' }
           }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              {user.username}
-              {user.isHost && " 👑"}
-            </Typography>
-            {roomState.room.isVotingActive && (
-              <div style={{ marginTop: '8px' }}>
-                <div style={{
-                  width: '40px',
-                  height: '60px',
-                  margin: '0 auto',
-                  backgroundColor: user.vote !== null ? '#E8F5E9' : '#f0f0f0',
-                  border: '2px solid #1B5E20',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  fontWeight: 'bold',
-                  fontSize: '1.2rem',
-                  color: '#1B5E20',
-                }}>
-                  {!roomState.room.isVotingActive && user.vote ? user.vote : (user.vote && roomState.room.isVotingActive ? '✓' : '?')}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+            {user.username}
+            {user.isHost && "👑"}
+          </Typography>
+          {roomState.room.isVotingActive && (
+            <Box sx={{ 
+              mt: 2,
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <Paper elevation={2} sx={{
+                width: '60px',
+                height: '90px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: user.vote !== null ? '#ECEFF1' : '#FAFAFA',
+                border: '2px solid #546E7A',
+                borderRadius: '12px',
+                fontSize: '1.5rem',
+                fontWeight: '500',
+                color: '#37474F',
+              }}>
+                {!roomState.room.isVotingActive && user.vote ? user.vote : (user.vote && roomState.room.isVotingActive ? '✓' : '?')}
+              </Paper>
+            </Box>
+          )}
+        </Paper>
       ))}
 
       {/* Voting Controls */}
       {roomState.room.isVotingActive && !roomState.currentUser?.vote && (
-        <div style={{
+        <Paper elevation={4} sx={{
           position: 'fixed',
-          bottom: 20,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: '8px',
-          padding: '16px',
-          borderRadius: '8px',
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          left: '10%',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '16px',
+          padding: '32px',
+          borderRadius: '24px',
+          backgroundColor: 'rgba(250, 250, 250, 0.98)',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
           zIndex: 1000,
-          flexWrap: 'wrap',
-          justifyContent: 'center',
         }}>
           {FIBONACCI.map((number) => (
             <Button
               key={number}
               variant={roomState.currentUser?.vote === number ? 'contained' : 'outlined'}
-              color={roomState.currentUser?.vote === number ? 'success' : 'primary'}
+              color={roomState.currentUser?.vote === number ? 'primary' : 'inherit'}
               onClick={() => handleVote(number)}
-              sx={{ minWidth: '48px', height: '48px', margin: '4px' }}
+              sx={{ 
+                width: '80px', 
+                height: '80px', 
+                borderRadius: '20px',
+                fontSize: '1.5rem',
+                fontWeight: '500',
+                transition: 'all 0.2s ease',
+                backgroundColor: roomState.currentUser?.vote === number ? '#546E7A' : 'transparent',
+                borderColor: '#546E7A',
+                color: roomState.currentUser?.vote === number ? 'white' : '#546E7A',
+                '&:hover': {
+                  transform: 'scale(1.05)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  backgroundColor: roomState.currentUser?.vote === number ? '#455A64' : 'rgba(84, 110, 122, 0.08)',
+                }
+              }}
             >
               {number}
             </Button>
           ))}
           <Button
+            variant={roomState.currentUser?.vote === '?' ? 'contained' : 'outlined'}
+            color={roomState.currentUser?.vote === '?' ? 'primary' : 'inherit'}
+            onClick={() => handleVote('?')}
+            sx={{ 
+              width: '80px',
+              height: '80px',
+              borderRadius: '20px',
+              fontSize: '1.5rem',
+              backgroundColor: roomState.currentUser?.vote === '?' ? '#78909C' : 'transparent',
+              borderColor: '#78909C',
+              color: roomState.currentUser?.vote === '?' ? 'white' : '#78909C',
+              '&:hover': {
+                backgroundColor: roomState.currentUser?.vote === '?' ? '#607D8B' : 'rgba(120, 144, 156, 0.08)',
+                transform: 'scale(1.05)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+              },
+            }}
+          >
+            ?
+          </Button>
+          <Button
             variant={roomState.currentUser?.vote === '☕' ? 'contained' : 'outlined'}
-            color={roomState.currentUser?.vote === '☕' ? 'success' : 'primary'}
+            color={roomState.currentUser?.vote === '☕' ? 'primary' : 'inherit'}
             onClick={() => handleVote('☕')}
             sx={{ 
-              minWidth: '48px',
-              height: '48px',
-              margin: '4px',
+              width: '80px',
+              height: '80px',
+              borderRadius: '20px',
+              fontSize: '1.5rem',
               backgroundColor: roomState.currentUser?.vote === '☕' ? '#795548' : 'transparent',
+              borderColor: '#795548',
               color: roomState.currentUser?.vote === '☕' ? 'white' : '#795548',
               '&:hover': {
-                backgroundColor: '#5D4037',
-                color: 'white'
+                backgroundColor: roomState.currentUser?.vote === '☕' ? '#5D4037' : 'rgba(121, 85, 72, 0.08)',
+                transform: 'scale(1.05)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
               },
             }}
           >
             ☕
           </Button>
-        </div>
+        </Paper>
       )}
 
       {/* Voting Results */}
-      {votingResult && !roomState.room.isVotingActive && (
-        <div style={{
+      {showResults && !roomState.room.isVotingActive && (
+        <Paper elevation={4} sx={{
           position: 'fixed',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          backgroundColor: 'white',
           padding: '32px',
-          borderRadius: '16px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-          maxWidth: '500px',
+          borderRadius: '24px',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          maxWidth: '600px',
           width: '90%',
           zIndex: 2000,
         }}>
-          <Typography variant="h5" gutterBottom sx={{ borderBottom: '2px solid #1B5E20', paddingBottom: '8px', color: '#1B5E20' }}>
+          <Typography variant="h4" gutterBottom sx={{ 
+            borderBottom: '3px solid #3F51B5',
+            paddingBottom: '16px',
+            color: '#3F51B5',
+            fontWeight: 'bold'
+          }}>
             Oylama Sonuçları
           </Typography>
           
@@ -326,95 +447,47 @@ function PokerTable({ roomState, setRoomState }) {
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
-            backgroundColor: '#E8F5E9',
-            padding: '16px',
-            borderRadius: '8px',
-            marginY: '16px'
+            backgroundColor: '#E8EAF6',
+            padding: '24px',
+            borderRadius: '16px',
+            marginY: '24px'
           }}>
-            <Typography variant="h6">Ortalama:</Typography>
-            <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold' }}>
-              {votingResult.average}
+            <Typography variant="h5" sx={{ color: '#3F51B5' }}>Ortalama:</Typography>
+            <Typography variant="h3" sx={{ 
+              color: '#3F51B5',
+              fontWeight: 'bold'
+            }}>
+              {votingResults.average}
             </Typography>
           </Box>
 
-          {votingResult.coffeeBreaks > 0 && (
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" sx={{ mb: 2, color: '#3F51B5' }}>
+              Oylar:
+            </Typography>
             <Box sx={{ 
-              backgroundColor: '#795548',
-              color: 'white',
-              padding: '12px',
-              borderRadius: '8px',
-              marginBottom: '16px',
               display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
+              flexWrap: 'wrap',
+              gap: '12px'
             }}>
-              <span style={{ fontSize: '24px' }}>☕</span>
-              <Typography>
-                Mola İsteyenler: {votingResult.coffeeBreaks}
-              </Typography>
-            </Box>
-          )}
-
-          <Box sx={{ 
-            marginTop: '16px',
-            maxHeight: '200px',
-            overflowY: 'auto',
-            '&::-webkit-scrollbar': {
-              width: '8px',
-            },
-            '&::-webkit-scrollbar-track': {
-              background: '#f1f1f1',
-              borderRadius: '4px',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              background: '#888',
-              borderRadius: '4px',
-            },
-          }}>
-            {votingResult.votes.map((vote, index) => (
-              <Box 
-                key={index}
-                sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '8px',
-                  borderBottom: '1px solid #eee',
-                  '&:last-child': {
-                    borderBottom: 'none'
-                  }
-                }}
-              >
-                <Typography sx={{ fontWeight: 'bold' }}>{vote.username}</Typography>
-                <Typography 
+              {users.map((user) => (
+                <Chip
+                  key={user.id}
+                  label={`${user.username}: ${user.vote || '?'}`}
+                  color={user.vote === '☕' ? 'default' : 'primary'}
+                  variant="outlined"
                   sx={{ 
-                    fontWeight: 'bold',
-                    color: vote.vote === '☕' ? '#795548' : '#1B5E20'
+                    borderRadius: '12px',
+                    padding: '16px 12px',
+                    fontSize: '1rem'
                   }}
-                >
-                  {vote.vote || 'Oy vermedi'}
-                </Typography>
-              </Box>
-            ))}
+                />
+              ))}
+            </Box>
           </Box>
-
-          <Button
-            variant="contained"
-            onClick={() => setVotingResult(null)}
-            sx={{ 
-              marginTop: '24px',
-              backgroundColor: '#1B5E20',
-              '&:hover': {
-                backgroundColor: '#2E7D32'
-              }
-            }}
-            fullWidth
-          >
-            Kapat
-          </Button>
-        </div>
+        </Paper>
       )}
-    </div>
+    </Box>
   );
 }
 
