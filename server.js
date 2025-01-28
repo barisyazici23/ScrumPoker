@@ -5,16 +5,18 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const server = http.createServer(app);
-
 const PORT = process.env.PORT || 3002;
 
+// HTTP server'ı oluştur
+const server = http.createServer(app);
+
+// Socket.IO'yu yapılandır
 const io = socketIo(server, {
   cors: {
-    origin: true, // Allow all origins in production
+    origin: "*",  // Production'da bunu spesifik domain ile değiştirin
     methods: ["GET", "POST"],
-    credentials: true,
-    allowedHeaders: ["my-custom-header"]
+    allowedHeaders: ["my-custom-header"],
+    credentials: true
   },
   allowEIO3: true,
   pingTimeout: 10000,
