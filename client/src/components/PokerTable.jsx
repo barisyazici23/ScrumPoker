@@ -6,28 +6,13 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 const FIBONACCI = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
 
 const getPositionStyle = (index, total) => {
-  const radius = Math.min(window.innerWidth, window.innerHeight) * 0.3;
+  const radius = Math.min(window.innerWidth, window.innerHeight) * 0.35;
   
-  let angle;
-  if (total <= 2) {
-    angle = (index * 180 + 90) * (Math.PI / 180);
-  } else if (total <= 4) {
-    angle = (index * 90 + 45) * (Math.PI / 180);
-  } else {
-    const baseAngle = 360 / total;
-    angle = ((index * baseAngle) + 90) * (Math.PI / 180);
-    const ellipticalFactor = 1.2;
-    const xRadius = radius * ellipticalFactor;
-    const yRadius = radius;
-    
-    return {
-      position: 'absolute',
-      left: `calc(50% + ${xRadius * Math.cos(angle)}px)`,
-      top: `calc(50% + ${yRadius * Math.sin(angle)}px)`,
-      transform: 'translate(-50%, -50%)',
-      transition: 'all 0.5s ease-in-out',
-    };
-  }
+  // Daire üzerinde eşit aralıklı yerleşim
+  const angleStep = (2 * Math.PI) / total; // Toplam kullanıcı sayısına göre açı adımı
+  // İlk kullanıcı alt ortada (270 derece veya 3π/2) başlar
+  const startAngle = (3 * Math.PI) / 2;
+  const angle = startAngle + (index * angleStep);
 
   return {
     position: 'absolute',
