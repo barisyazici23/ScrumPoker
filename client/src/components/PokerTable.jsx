@@ -6,20 +6,25 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 const FIBONACCI = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
 
 const getPositionStyle = (index, total) => {
-  const radius = Math.min(window.innerWidth, window.innerHeight) * 0.35;
+  // Masa merkezini referans alarak pozisyonları hesapla
+  const tableCenter = {
+    x: window.innerWidth * 0.4, // Masanın sol pozisyonu
+    y: window.innerHeight * 0.5 // Masanın dikey merkezi
+  };
   
-  // Daire üzerinde eşit aralıklı yerleşim
-  const angleStep = (2 * Math.PI) / total; // Toplam kullanıcı sayısına göre açı adımı
-  // İlk kullanıcı alt ortada (270 derece veya 3π/2) başlar
-  const startAngle = (3 * Math.PI) / 2;
+  const radius = Math.min(window.innerWidth, window.innerHeight) * 0.36;
+  const angleStep = (2 * Math.PI) / total;
+  const startAngle = (3 * Math.PI) / 2; // Alt merkez nokta (270 derece)
   const angle = startAngle + (index * angleStep);
 
+  // Kartların pozisyonlarını masa merkezine göre hesapla
   return {
     position: 'absolute',
-    left: `calc(50% + ${radius * Math.cos(angle)}px)`,
-    top: `calc(50% + ${radius * Math.sin(angle)}px)`,
+    left: `${tableCenter.x + (radius * Math.cos(angle))}px`,
+    top: `${tableCenter.y + (radius * Math.sin(angle))}px`,
     transform: 'translate(-50%, -50%)',
     transition: 'all 0.5s ease-in-out',
+    zIndex: 3,
   };
 };
 
@@ -159,6 +164,14 @@ function PokerTable({ roomState, setRoomState }) {
 
   console.log('Rendering poker table with users:', users);
 
+  const findClosestFibonacci = (average) => {
+    if (isNaN(average)) return '-';
+    
+    return FIBONACCI.reduce((prev, curr) => {
+      return (Math.abs(curr - average) < Math.abs(prev - average) ? curr : prev);
+    });
+  };
+
   return (
     <Box sx={{
       position: 'fixed',
@@ -223,7 +236,7 @@ function PokerTable({ roomState, setRoomState }) {
       <Box sx={{
         position: 'absolute',
         top: '50%',
-        left: '50%',
+        left: '40%',
         transform: 'translate(-50%, -50%)',
         width: '80vw',
         maxWidth: '1200px',
@@ -320,7 +333,7 @@ function PokerTable({ roomState, setRoomState }) {
       {roomState.room.isVotingActive && !roomState.currentUser?.vote && (
         <Paper elevation={4} sx={{
           position: 'fixed',
-          left: '10%',
+          right: '400px',
           top: '50%',
           transform: 'translateY(-50%)',
           display: 'grid',
@@ -409,17 +422,16 @@ function PokerTable({ roomState, setRoomState }) {
         <Paper elevation={4} sx={{
           position: 'fixed',
           top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
+          right: '260px',
+          transform: 'translateY(-50%)',
           padding: '32px',
           borderRadius: '24px',
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(10px)',
-          maxWidth: '600px',
-          width: '90%',
+          width: '390px',
           zIndex: 2000,
         }}>
-          <Typography variant="h4" gutterBottom sx={{ 
+          <Typography variant="h5" gutterBottom sx={{ 
             borderBottom: '3px solid #3F51B5',
             paddingBottom: '16px',
             color: '#3F51B5',
@@ -429,47 +441,65 @@ function PokerTable({ roomState, setRoomState }) {
           </Typography>
           
           <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
             backgroundColor: '#E8EAF6',
-            padding: '24px',
+            padding: '16px',
             borderRadius: '16px',
-            marginY: '24px'
+            marginY: '16px'
           }}>
-            <Typography variant="h5" sx={{ color: '#3F51B5' }}>Ortalama:</Typography>
-            <Typography variant="h3" sx={{ 
-              color: '#3F51B5',
-              fontWeight: 'bold'
-            }}>
-              {votingResults.average}
-            </Typography>
-          </Box>
-
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2, color: '#3F51B5' }}>
-              Oylar:
-            </Typography>
-            <Box sx={{ 
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '12px'
-            }}>
-              {users.map((user) => (
-                <Chip
-                  key={user.id}
-                  label={`${user.username}: ${user.vote || '?'}`}
-                  color={user.vote === '☕' ? 'default' : 'primary'}
-                  variant="outlined"
-                  sx={{ 
-                    borderRadius: '12px',
-                    padding: '16px 12px',
-                    fontSize: '1rem'
-                  }}
-                />
-              ))}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6" sx={{ color: '#3F51B5', fontWeight: 500 }}>Ortalama:</Typography>
+              <Typography variant="h4" sx={{ color: '#3F51B5', fontWeight: 'bold' }}>
+                {votingResults.average}
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+              <Typography variant="h6" sx={{ color: '#3F51B5', fontWeight: 500 }}>En Yakın Fibonacci:</Typography>
+              <Typography variant="h4" sx={{ color: '#3F51B5', fontWeight: 'bold' }}>
+                {findClosestFibonacci(parseFloat(votingResults.average))}
+              </Typography>
             </Box>
           </Box>
+
+          <Typography variant="h6" sx={{ mt: 3, mb: 2, color: '#3F51B5' }}>
+            Oylar:
+          </Typography>
+          <List sx={{ 
+            width: '100%',
+            bgcolor: 'background.paper',
+            borderRadius: '8px',
+            border: '1px solid #E0E0E0'
+          }}>
+            {users.map((user) => (
+              <ListItem
+                key={user.id}
+                sx={{
+                  borderBottom: '1px solid #E0E0E0',
+                  '&:last-child': {
+                    borderBottom: 'none'
+                  }
+                }}
+              >
+                <ListItemText
+                  primary={user.username}
+                  secondary={user.vote || '?'}
+                  primaryTypographyProps={{
+                    fontWeight: user.isHost ? 'bold' : 'normal'
+                  }}
+                  secondaryTypographyProps={{
+                    color: 'primary',
+                    fontSize: '1.1rem'
+                  }}
+                />
+                {user.isHost && (
+                  <Typography variant="caption" sx={{ ml: 1 }}>👑</Typography>
+                )}
+              </ListItem>
+            ))}
+          </List>
         </Paper>
       )}
     </Box>
