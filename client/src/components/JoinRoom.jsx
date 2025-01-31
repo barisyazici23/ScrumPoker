@@ -100,9 +100,9 @@ const JoinRoom = ({ setRoomState }) => {
       }}>
         <Paper elevation={4} sx={{
           width: '100%',
-          maxWidth: '1000px',
+          maxWidth: '800px',
           margin: '0 auto',
-          padding: '64px',
+          padding: '51px',
           borderRadius: '24px',
           backgroundColor: 'rgba(255, 255, 255, 0.98)',
           backdropFilter: 'blur(10px)',

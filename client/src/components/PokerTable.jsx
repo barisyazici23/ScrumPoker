@@ -6,18 +6,16 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 const FIBONACCI = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
 
 const getPositionStyle = (index, total) => {
-  // Masa merkezini referans alarak pozisyonları hesapla
   const tableCenter = {
-    x: window.innerWidth * 0.4, // Masanın sol pozisyonu
-    y: window.innerHeight * 0.5 // Masanın dikey merkezi
+    x: window.innerWidth * 0.4,
+    y: window.innerHeight * 0.5
   };
   
-  const radius = Math.min(window.innerWidth, window.innerHeight) * 0.36;
+  const radius = Math.min(window.innerWidth, window.innerHeight) * 0.42;
   const angleStep = (2 * Math.PI) / total;
-  const startAngle = (3 * Math.PI) / 2; // Alt merkez nokta (270 derece)
+  const startAngle = (3 * Math.PI) / 2;
   const angle = startAngle + (index * angleStep);
 
-  // Kartların pozisyonlarını masa merkezine göre hesapla
   return {
     position: 'absolute',
     left: `${tableCenter.x + (radius * Math.cos(angle))}px`,
@@ -238,11 +236,11 @@ function PokerTable({ roomState, setRoomState }) {
         top: '50%',
         left: '40%',
         transform: 'translate(-50%, -50%)',
-        width: '80vw',
-        maxWidth: '1200px',
-        height: '80vh',
-        maxHeight: '800px',
-        borderRadius: '40px',
+        width: '68vw',
+        maxWidth: '1020px',
+        height: '68vh',
+        maxHeight: '680px',
+        borderRadius: '34px',
         backgroundColor: '#3F51B5',
         boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
         border: '1px solid rgba(255,255,255,0.1)',
@@ -250,7 +248,8 @@ function PokerTable({ roomState, setRoomState }) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '40px'
+        padding: '34px',
+        position: 'relative',
       }}>
         <Typography variant="h2" sx={{ 
           color: '#FFFFFF', 
@@ -277,11 +276,11 @@ function PokerTable({ roomState, setRoomState }) {
           sx={{
             ...getPositionStyle(index, users.length),
             zIndex: 2,
-            borderRadius: '16px',
-            padding: '16px',
+            borderRadius: '14px',
+            padding: '14px',
             backgroundColor: 'rgba(250, 250, 250, 0.95)',
             backdropFilter: 'blur(10px)',
-            width: '160px',
+            width: '136px',
             maxWidth: '90vw',
             border: user.isHost ? '2px solid #5C6BC0' : user.vote !== null ? '2px solid #78909C' : '2px solid transparent',
             transition: 'all 0.3s ease',
@@ -310,15 +309,15 @@ function PokerTable({ roomState, setRoomState }) {
               justifyContent: 'center'
             }}>
               <Paper elevation={2} sx={{
-                width: '60px',
-                height: '90px',
+                width: '43px',
+                height: '65px',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
                 backgroundColor: user.vote !== null ? '#ECEFF1' : '#FAFAFA',
                 border: '2px solid #546E7A',
-                borderRadius: '12px',
-                fontSize: '1.5rem',
+                borderRadius: '8px',
+                fontSize: '1.1rem',
                 fontWeight: '500',
                 color: '#37474F',
               }}>
@@ -333,7 +332,7 @@ function PokerTable({ roomState, setRoomState }) {
       {roomState.room.isVotingActive && !roomState.currentUser?.vote && (
         <Paper elevation={4} sx={{
           position: 'fixed',
-          right: '400px',
+          right: '260px',
           top: '50%',
           transform: 'translateY(-50%)',
           display: 'grid',
@@ -422,14 +421,44 @@ function PokerTable({ roomState, setRoomState }) {
         <Paper elevation={4} sx={{
           position: 'fixed',
           top: '50%',
-          right: '260px',
+          right: '80px',
           transform: 'translateY(-50%)',
-          padding: '32px',
+          padding: '16px',
           borderRadius: '24px',
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(10px)',
-          width: '390px',
+          width: '351px',
           zIndex: 2000,
+          '& .MuiTypography-h4': {
+            fontSize: '1.5rem',
+          },
+          '& .MuiTypography-h5': {
+            fontSize: '1.1rem',
+            paddingBottom: '8px',
+          },
+          '& .MuiTypography-h6': {
+            fontSize: '1rem',
+          },
+          '& .MuiListItem-root': {
+            padding: '0px 8px',
+            minHeight: '24px',
+            '& .MuiTypography-root': {
+              lineHeight: 1.2
+            }
+          },
+          '& .MuiList-root': {
+            maxHeight: '440px',
+            overflowY: 'auto',
+            padding: '2px 0'
+          },
+          '& .MuiBox-root': {
+            padding: '8px',
+            marginY: '0px',
+            gap: '2px',
+          },
+          '& .MuiBox-root > .MuiBox-root': {
+            marginTop: '2px'
+          }
         }}>
           <Typography variant="h5" gutterBottom sx={{ 
             borderBottom: '3px solid #3F51B5',
@@ -471,7 +500,8 @@ function PokerTable({ roomState, setRoomState }) {
             width: '100%',
             bgcolor: 'background.paper',
             borderRadius: '8px',
-            border: '1px solid #E0E0E0'
+            border: '1px solid #E0E0E0',
+            padding: '4px 0'
           }}>
             {users.map((user) => (
               <ListItem
@@ -480,23 +510,45 @@ function PokerTable({ roomState, setRoomState }) {
                   borderBottom: '1px solid #E0E0E0',
                   '&:last-child': {
                     borderBottom: 'none'
+                  },
+                  padding: '1px 8px',
+                  minHeight: '24px',
+                  '& .MuiTypography-root': {
+                    lineHeight: 1.2
                   }
                 }}
               >
-                <ListItemText
-                  primary={user.username}
-                  secondary={user.vote || '?'}
-                  primaryTypographyProps={{
-                    fontWeight: user.isHost ? 'bold' : 'normal'
-                  }}
-                  secondaryTypographyProps={{
-                    color: 'primary',
-                    fontSize: '1.1rem'
-                  }}
-                />
-                {user.isHost && (
-                  <Typography variant="caption" sx={{ ml: 1 }}>👑</Typography>
-                )}
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  width: '100%'
+                }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    gap: 1
+                  }}>
+                    <Typography 
+                      sx={{ 
+                        fontWeight: user.isHost ? 'bold' : 'normal',
+                        fontSize: '0.9rem'
+                      }}
+                    >
+                      {user.username}
+                      {user.isHost && " 👑"}
+                    </Typography>
+                  </Box>
+                  <Typography 
+                    sx={{ 
+                      color: '#3F51B5',
+                      fontWeight: '500',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    {user.vote || '?'}
+                  </Typography>
+                </Box>
               </ListItem>
             ))}
           </List>
